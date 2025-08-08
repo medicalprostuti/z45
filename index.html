@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>যুলোজি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "প্যারাথরমোন (parathormone) এর কাজ কোনটি?",
+          options: {
+            a: "বৃক্কের ক্যালসিয়াম ধরে রাখার ক্ষমতা কমায়",
+            b: "হৃৎক্রিয়া বৃদ্ধি করে",
+            c: "প্রোটিন ও শর্করা বিপাক বৃদ্ধি করে",
+            d: "ফসফেটের রেচন হার বৃদ্ধি করে",
+          },
+          correct: "d",
+          explanation:
+            "<p>প্যারাথরমোন (Parathormone বা PTH) প্যারাথাইরয়েড গ্রন্থি থেকে নিঃসৃত হয় এবং রক্তে ক্যালসিয়াম ও ফসফেটের মাত্রা নিয়ন্ত্রণে গুরুত্বপূর্ণ ভূমিকা পালন করে। এর একটি প্রধান কাজ হলো বৃক্কের (Kidney) মাধ্যমে <strong>ফসফেটের রেচন হার বৃদ্ধি করা</strong>, যার ফলে রক্তে ফসফেটের পরিমাণ কমে যায়। একই সাথে এটি বৃক্কের ক্যালসিয়াম শোষণ ক্ষমতা বৃদ্ধি করে এবং হাড় থেকে ক্যালসিয়াম মুক্ত হতে সাহায্য করে, ফলে রক্তে ক্যালসিয়ামের মাত্রা বাড়ে।</p>",
+        },
+        {
+          id: 2,
+          question: "হরমোনের বিষয়ে কোনটি সঠিক?",
+          options: {
+            a: "কোষ আবরণী দিয়ে ব্যাপন ঘটে",
+            b: "রাসায়নিক বিক্রিয়া উভমুখী",
+            c: "বহিঃক্ষরা গ্রন্থি দ্বারা নিঃসৃত",
+            d: "বিক্রিয়ার হার দ্রুত ও তাৎক্ষণিক",
+          },
+          correct: "a",
+          explanation:
+            "<p>হরমোনের বিষয়ে সঠিক তথ্যটি হলো: <strong>কোষ আবরণী দিয়ে ব্যাপন ঘটে</strong>। স্টেরয়েড হরমোন এবং থাইরয়েড হরমোনগুলোর মতো চর্বি-দ্রবণীয় হরমোনগুলো লক্ষ্য কোষের কোষ আবরণী (Cell membrane) ভেদ করে কোষের অভ্যন্তরে প্রবেশ করতে পারে এবং রিসেপ্টরের সাথে যুক্ত হয়ে কাজ করে। হরমোন অন্তঃক্ষরা গ্রন্থি দ্বারা নিঃসৃত হয়, রাসায়নিক বিক্রিয়া সবসময় উভমুখী হয় না এবং হরমোনের ক্রিয়া সাধারণত স্নায়বিক উদ্দীপনার মতো দ্রুত ও তাৎক্ষণিক হয় না, বরং ধীর এবং দীর্ঘস্থায়ী হয়।</p>",
+        },
+        {
+          id: 3,
+          question: "কোনটি Exocrine গ্রন্থি নয়?",
+          options: {
+            a: "Thyroid gland",
+            b: "Pancreas",
+            c: "Liver",
+            d: "Salivary gland",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>Exocrine গ্রন্থি (বহিঃক্ষরা গ্রন্থি)</strong> হলো সেই গ্রন্থিগুলো যা তাদের ক্ষরিত পদার্থ নালীর মাধ্যমে নির্দিষ্ট স্থানে পৌঁছায়। অগ্ন্যাশয় (Pancreas) এবং যকৃত (Liver) মিশ্র গ্রন্থি হলেও এদের বহিঃক্ষরা অংশ রয়েছে, এবং লালা গ্রন্থি (Salivary gland) একটি বহিঃক্ষরা গ্রন্থি। তবে, <strong>থাইরয়েড গ্রন্থি (Thyroid gland)</strong> হলো একটি <strong>অন্তঃক্ষরা গ্রন্থি (Endocrine gland)</strong>, যা সরাসরি রক্তে হরমোন নিঃসৃত করে এবং এর কোনো নালী নেই।</p>",
+        },
+        {
+          id: 4,
+          question: "গ্রোথ হরমোন কোথায় তৈরি হয়?",
+          options: {
+            a: "Thalamus",
+            b: "Hypothalamus",
+            c: "Adrenal gland",
+            d: "Pituitary gland",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>গ্রোথ হরমোন (Growth hormone - GH)</strong>, যা সোমাটোট্রপিন (Somatotropin) নামেও পরিচিত, <strong>পিটুইটারি গ্রন্থির (Pituitary gland) অগ্রবর্তী অংশ (anterior pituitary)</strong> থেকে তৈরি ও নিঃসৃত হয়। এটি দেহের বৃদ্ধি, কোষ পুনরুৎপাদন এবং মেরামতকে উদ্দীপিত করে।</p>",
+        },
+        {
+          id: 5,
+          question: "নিচের কোনটি বহিঃক্ষরা (Exocrine) গ্রন্থি নয়?",
+          options: {
+            a: "অশ্রু গ্রন্থি",
+            b: "ঘাম গ্রন্থি",
+            c: "থাইরয়েড গ্রন্থি",
+            d: "প্যারোটিড গ্রন্থি",
+          },
+          correct: "c",
+          explanation:
+            "<p>বহিঃক্ষরা গ্রন্থিগুলো তাদের ক্ষরিত পদার্থ নালীর মাধ্যমে বাইরে বা নির্দিষ্ট স্থানে পৌঁছায়। অশ্রু গ্রন্থি, ঘাম গ্রন্থি এবং প্যারোটিড গ্রন্থি (লালা গ্রন্থির একটি প্রকার) হলো বহিঃক্ষরা গ্রন্থি। তবে, <strong>থাইরয়েড গ্রন্থি (Thyroid gland)</strong> হলো একটি <strong>অন্তঃক্ষরা গ্রন্থি</strong>, যা সরাসরি রক্তে হরমোন (যেমন থাইরক্সিন) নিঃসৃত করে।</p>",
+        },
+        {
+          id: 6,
+          question: "নিচের কোন গ্রন্থিটি ভিন্ন প্রকৃতির?",
+          options: {
+            a: "শুক্রাশয়",
+            b: "অগ্ন্যাশয়",
+            c: "এড্রেনাল",
+            d: "ডিম্বাশয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>শুক্রাশয় (Testis), অগ্ন্যাশয় (Pancreas) এবং ডিম্বাশয় (Ovary) হলো <strong>মিশ্র গ্রন্থি (Mixed glands)</strong>, অর্থাৎ এগুলির অন্তঃক্ষরা এবং বহিঃক্ষরা উভয় প্রকার কার্যকারিতা রয়েছে। উদাহরণস্বরূপ, অগ্ন্যাশয় ইনসুলিন (হরমোন) এবং পাচক এনজাইম উভয়ই তৈরি করে। অন্যদিকে, <strong>এড্রেনাল (Adrenal) গ্রন্থি</strong> হলো একটি <strong>পূর্ণ অন্তঃক্ষরা গ্রন্থি</strong>, যা শুধুমাত্র হরমোন (যেমন অ্যাড্রেনালিন, কর্টিসল) উৎপাদন করে এবং সরাসরি রক্তে নিঃসৃত করে। তাই এটি ভিন্ন প্রকৃতির।</p>",
+        },
+        {
+          id: 7,
+          question: "পিটুইটারি গ্রন্থি সম্পর্কে কোন তথ্যটি সঠিক নয়?",
+          options: {
+            a: "এটি হাইপোথ্যালামাসের সঙ্গে সংযুক্ত",
+            b: "এটি তিনদিক থেকে অস্থি দ্বারা আবৃত",
+            c: "এটি থেকে স্টেরয়েড হরমোন নিঃসৃত হয়",
+            d: "এটি মূলত দুই ভাগে বিভক্ত",
+          },
+          correct: "c",
+          explanation:
+            "<p>পিটুইটারি গ্রন্থি (Pituitary gland) সম্পর্কে সঠিক নয় এমন তথ্যটি হলো: <strong>এটি থেকে স্টেরয়েড হরমোন নিঃসৃত হয়</strong>। পিটুইটারি গ্রন্থি স্টেরয়েড হরমোন সরাসরি উৎপাদন করে না। স্টেরয়েড হরমোন (যেমন কর্টিসল, ইস্ট্রোজেন, টেস্টোস্টেরন) মূলত অ্যাড্রেনাল গ্রন্থি, ডিম্বাশয় এবং শুক্রাশয় থেকে নিঃসৃত হয়। পিটুইটারি গ্রন্থি অন্যান্য গ্রন্থিকে উদ্দীপিত করার জন্য ট্রপিক হরমোন (Tropic hormones) তৈরি করে, যা পরোক্ষভাবে স্টেরয়েড হরমোন নিঃসরণকে প্রভাবিত করে। অন্যান্য তথ্যগুলো সঠিক: এটি হাইপোথ্যালামাসের সাথে যুক্ত, একটি অস্থি দ্বারা আংশিকভাবে আবৃত (সেল্লা টারসিকা), এবং এটি অগ্র পিটুইটারি ও পশ্চাৎ পিটুইটারি - এই দুই ভাগে বিভক্ত।</p>",
+        },
+        {
+          id: 8,
+          question: "নিচের কোন গ্রন্থিটি ক্যালসিয়াম বিপাকে সহায়তা করে?",
+          options: {
+            a: "প্যারাথাইরয়েড",
+            b: "থাইরয়েড",
+            c: "পিটুইটারি",
+            d: "অ্যাড্রেনাল",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>প্যারাথাইরয়েড গ্রন্থি (Parathyroid gland)</strong> রক্তে ক্যালসিয়াম এবং ফসফরাসের মাত্রা নিয়ন্ত্রণে প্রধান ভূমিকা পালন করে। এটি প্যারাথরমোন (Parathormone - PTH) হরমোন নিঃসরণ করে, যা রক্তে ক্যালসিয়ামের মাত্রা বাড়ায় এবং ফসফেটের মাত্রা কমায়। থাইরয়েড গ্রন্থিও ক্যালসিটোনিন (Calcitonin) হরমোন নিঃসরণ করে যা ক্যালসিয়াম বিপাকে ভূমিকা রাখে, তবে প্যারাথাইরয়েড গ্রন্থি ক্যালসিয়াম বাড়ানোর ক্ষেত্রে প্রধান।</p>",
+        },
+        {
+          id: 9,
+          question: "নিচের কোন হরমোনটি থাইরয়েড গ্রন্থি থেকে নিঃসৃত হয় না?",
+          options: {
+            a: "টেট্রা-আয়োডোথাইরোনিন",
+            b: "থাইরক্সিন",
+            c: "অক্সিটোসিন",
+            d: "ট্রাই-আয়োডো-থাইরোনিন",
+          },
+          correct: "c",
+          explanation:
+            "<p>থাইরয়েড গ্রন্থি থেকে থাইরক্সিন (Thyroxine বা T4, টেট্রা-আয়োডোথাইরোনিন) এবং ট্রাই-আয়োডো-থাইরোনিন (Triiodothyronine বা T3) নামক হরমোন নিঃসৃত হয়, যা দেহের বিপাক ক্রিয়া নিয়ন্ত্রণ করে। ক্যালসিটোনিনও থাইরয়েড গ্রন্থির প্যারাফলিকুলার কোষ থেকে নিঃসৃত হয়। তবে, <strong>অক্সিটোসিন (Oxytocin)</strong> হরমোনটি <strong>হাইপোথ্যালামাসে তৈরি হয় এবং পিটুইটারি গ্রন্থির পশ্চাৎ অংশ থেকে নিঃসৃত হয়</strong>, এটি থাইরয়েড গ্রন্থি থেকে নিঃসৃত হয় না।</p>",
+        },
+        {
+          id: 10,
+          question: "নিম্নের কোন হরমোন আয়নের সমতা রক্ষায় কাজ করে?",
+          options: {
+            a: "অ্যালডোস্টেরন",
+            b: "প্রোজেস্টেরন",
+            c: "গ্যাসট্রিন",
+            d: "থাইরক্সিন",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>অ্যালডোস্টেরন (Aldosterone)</strong> হলো অ্যাড্রেনাল গ্রন্থির কর্টেক্স থেকে নিঃসৃত একটি মিনারেলোকর্টিকয়েড হরমোন। এর প্রধান কাজ হলো বৃক্কের নালিকা থেকে <strong>সোডিয়াম (Na⁺) এবং জলের শোষণ বৃদ্ধি করা</strong>, এবং পটাসিয়াম (K⁺) রেচন বৃদ্ধি করা, যার ফলে রক্তচাপ এবং রক্তে আয়নের সমতা বজায় থাকে।</p>",
+        },
+        {
+          id: 11,
+          question: "নিম্নের কোনটি হৃৎপিণ্ডের সংকোচনের শক্তিকে বাড়ায়?",
+          options: {
+            a: "ইনসুলিন",
+            b: "ভেগাস",
+            c: "এড্রেনালিন",
+            d: "প্যারাঘরমোন",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>এড্রেনালিন (Adrenaline)</strong>, যা এপিনেফ্রিন (Epinephrine) নামেও পরিচিত, অ্যাড্রেনাল গ্রন্থির মেডুলা থেকে নিঃসৃত হয়। এটি 'লড়াই বা পালানো' (fight-or-flight) প্রতিক্রিয়ার জন্য দায়ী এবং <strong>হৃৎপিণ্ডের সংকোচনের শক্তি ও হার বৃদ্ধি করে</strong>, রক্তচাপ বাড়ায় এবং শ্বাসপ্রশ্বাস দ্রুত করে। ইনসুলিন রক্তে শর্করার মাত্রা নিয়ন্ত্রণ করে, ভেগাস স্নায়ু হৃদস্পন্দন কমায়, এবং প্যারাথরমোন ক্যালসিয়াম বিপাকে জড়িত।</p>",
+        },
+        {
+          id: 12,
+          question: "মানবদেহের সবচেয়ে ছোট অন্তঃক্ষরা গ্রন্থি কোনটি?",
+          options: {
+            a: "থাইরয়েড",
+            b: "শুক্রাশয়",
+            c: "পিটুইটারি",
+            d: "সুপ্রারেনাল",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানবদেহের সবচেয়ে ছোট অন্তঃক্ষরা গ্রন্থি হলো <strong>পিটুইটারি গ্রন্থি (Pituitary gland)</strong>। এটি মস্তিষ্কের নিচে একটি মটরের আকারের গ্রন্থি, যা অনেক গুরুত্বপূর্ণ হরমোন নিঃসরণ করে এবং অন্যান্য অন্তঃক্ষরা গ্রন্থির কার্যকারিতা নিয়ন্ত্রণ করে, তাই এটি 'মাস্টার গ্ল্যান্ড' নামেও পরিচিত।</p>",
+        },
+        {
+          id: 13,
+          question: "নিচের কোনটি মিশ্র গ্রন্থির উদাহরণ নয়?",
+          options: {
+            a: "ডিম্বাশয়",
+            b: "এড্রেনাল গ্রন্থি",
+            c: "অগ্ন্যাশয়",
+            d: "অস্ত্রীয় গ্রন্থি",
+          },
+          correct: "b",
+          explanation:
+            "<p>মিশ্র গ্রন্থি (Mixed gland) হলো সেই গ্রন্থি যা অন্তঃক্ষরা (হরমোন নিঃসরণ) এবং বহিঃক্ষরা (এনজাইম বা অন্যান্য পদার্থ নালীর মাধ্যমে নিঃসরণ) উভয় কার্যকারিতা প্রদর্শন করে। ডিম্বাশয় (Ovary), অগ্ন্যাশয় (Pancreas) এবং আন্ত্রিক গ্রন্থি (Intestinal glands) হলো মিশ্র গ্রন্থির উদাহরণ। তবে, <strong>এড্রেনাল গ্রন্থি (Adrenal gland)</strong> হলো একটি <strong>পূর্ণ অন্তঃক্ষরা গ্রন্থি</strong>, যা শুধুমাত্র হরমোন উৎপাদন করে এবং সরাসরি রক্তে নিঃসৃত করে।</p>",
+        },
+        {
+          id: 14,
+          question:
+            "মানবদেহে ক্যালসিয়াম ও ফসফরাসের বিপাক নিয়ন্ত্রণ করে কোন গ্রন্থি?",
+          options: {
+            a: "থাইমাস",
+            b: "থাইরয়েড",
+            c: "প্যারাথাইরয়েড",
+            d: "এড্রেনাল",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানবদেহে <strong>ক্যালসিয়াম (Calcium) এবং ফসফরাসের (Phosphorus) বিপাক</strong> প্রধানত <strong>প্যারাথাইরয়েড গ্রন্থি (Parathyroid gland)</strong> এবং এর দ্বারা নিঃসৃত প্যারাথরমোন (PTH) দ্বারা নিয়ন্ত্রিত হয়। থাইরয়েড গ্রন্থি থেকে নিঃসৃত ক্যালসিটোনিনও (Calcitonin) ক্যালসিয়াম বিপাকে ভূমিকা রাখে, তবে প্যারাথাইরয়েডের ভূমিকা আরও বেশি প্রত্যক্ষ।</p>",
+        },
+        {
+          id: 15,
+          question: "নিচের কোন জোড়াটি লোকাল হরমোনের উদাহরণ?",
+          options: {
+            a: "ইনসুলিন ও অ্যাড্রেনালিন",
+            b: "থাইরক্সিন ও সিক্রেটিন",
+            c: "সিক্রেটিন ও এন্টারোগ্যাস্ট্রিন",
+            d: "ইস্ট্রোজেন ও প্রজেস্টেরন",
+          },
+          correct: "c",
+          explanation:
+            "<p>লোকাল হরমোন (Local hormones) বা টিস্যু হরমোন হলো সেই হরমোন যা স্থানীয়ভাবে উৎপন্ন হয় এবং আশেপাশের কোষগুলোতে কাজ করে, সাধারণত রক্তে ব্যাপকভাবে পরিবাহিত হয় না। <strong>সিক্রেটিন (Secretin) এবং এন্টারোগ্যাস্ট্রিন (Enterogastrin)</strong> (যা গ্যাস্ট্রিক ইনহিবিটরি পেপটাইড নামেও পরিচিত) হলো পাচনতন্ত্রের দ্বারা উৎপন্ন হরমোন যা স্থানীয়ভাবে পাচন প্রক্রিয়া নিয়ন্ত্রণ করে। ইনসুলিন, অ্যাড্রেনালিন, থাইরক্সিন, ইস্ট্রোজেন এবং প্রজেস্টেরন হলো সিস্টেমিক হরমোন যা রক্তে পরিবাহিত হয়ে দূরবর্তী স্থানে কাজ করে।</p>",
+        },
+        {
+          id: 16,
+          question: "রক্তে Na⁺ K⁺ এর সমতা রক্ষা করে কোন হরমোন?",
+          options: {
+            a: "ইনসুলিন",
+            b: "গ্লুকাগন",
+            c: "অ্যাড্রেনালিন",
+            d: "অ্যালডোস্টেরন",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>অ্যালডোস্টেরন (Aldosterone)</strong> হলো একটি স্টেরয়েড হরমোন যা অ্যাড্রেনাল গ্রন্থির কর্টেক্স থেকে নিঃসৃত হয়। এর প্রধান কাজ হলো বৃক্কের (Kidney) মাধ্যমে <strong>রক্তে সোডিয়াম (Na⁺) এবং পটাসিয়াম (K⁺) আয়নের সমতা রক্ষা করা</strong>। এটি সোডিয়াম শোষণ বৃদ্ধি করে এবং পটাসিয়াম রেচন বৃদ্ধি করে, যা রক্তচাপ এবং ফ্লুইড ভারসাম্য বজায় রাখতে সাহায্য করে।</p>",
+        },
+        {
+          id: 17,
+          question: "নিম্নের কোনটি মিনারেলোকটিকয়েড হরমোনের কাজ নয়?",
+          options: {
+            a: "হৃদক্রিয়া বৃদ্ধি করা",
+            b: "বৃক্কের NaCl ও পানি শোষণ ক্ষমতা বৃদ্ধি করা",
+            c: "রক্তের প্লাজমার পরিমাণ বৃদ্ধি করা",
+            d: "K⁺ রেচন হার বৃদ্ধি করা",
+          },
+          correct: "a",
+          explanation:
+            "<p>মিনারেলোকর্টিকয়েড (Mineralocorticoid) হরমোন, যেমন অ্যালডোস্টেরন, মূলত ইলেক্ট্রোলাইট এবং ফ্লুইড ভারসাম্য নিয়ন্ত্রণ করে। এর কাজগুলো হলো: বৃক্কের NaCl (সোডিয়াম ক্লোরাইড) এবং পানি শোষণ ক্ষমতা বৃদ্ধি করা, রক্তের প্লাজমার পরিমাণ বৃদ্ধি করা (সোডিয়াম ও পানি ধরে রাখার মাধ্যমে), এবং K⁺ (পটাসিয়াম) রেচন হার বৃদ্ধি করা। <strong>হৃদক্রিয়া বৃদ্ধি করা</strong> মিনারেলোকর্টিকয়েড হরমোনের সরাসরি কাজ নয়, এটি অ্যাড্রেনালিন বা থাইরয়েড হরমোনের মতো অন্যান্য হরমোনের কাজ।</p>",
+        },
+        {
+          id: 18,
+          question: "কোনটি মিশ্র গ্রন্থি?",
+          options: {
+            a: "প্যারোটিড",
+            b: "সোয়েট",
+            c: "অগ্ন্যাশয়",
+            d: "অশ্রু",
+          },
+          correct: "c",
+          explanation:
+            "<p>মিশ্র গ্রন্থি (Mixed gland) হলো সেই গ্রন্থি যা অন্তঃক্ষরা (হরমোন নিঃসরণ) এবং বহিঃক্ষরা (এনজাইম বা অন্যান্য পদার্থ নালীর মাধ্যমে নিঃসরণ) উভয় কার্যকারিতা প্রদর্শন করে। <strong>অগ্ন্যাশয় (Pancreas)</strong> হলো একটি প্রধান মিশ্র গ্রন্থি, যা ইনসুলিন ও গ্লুকাগনের মতো হরমোন (অন্তঃক্ষরা) এবং পাচক এনজাইম (বহিঃক্ষরা) উভয়ই উৎপাদন করে। প্যারোটিড, সোয়েট (ঘাম) এবং অশ্রু গ্রন্থি হলো বহিঃক্ষরা গ্রন্থি।</p>",
+        },
+        {
+          id: 19,
+          question: "কোন গ্রন্থির ক্ষরণকাল আজীবন নয়?",
+          options: {
+            a: "সুপ্রারেনাল",
+            b: "পিনিয়াল",
+            c: "থাইমাস",
+            d: "টেস্টিস",
+          },
+          correct: "c",
+          explanation:
+            "<p>বেশিরভাগ অন্তঃক্ষরা গ্রন্থি সারাজীবন সক্রিয় থাকে। তবে, <strong>থাইমাস গ্রন্থি (Thymus gland)</strong> হলো একটি বিশেষ গ্রন্থি যা শৈশবে এবং কৈশোরে অত্যন্ত সক্রিয় থাকে এবং টি-লিম্ফোসাইট (T-lymphocytes) পরিপক্ক হতে সাহায্য করে (যা রোগ প্রতিরোধ ক্ষমতার অংশ)। বয়সের সাথে সাথে এটি ধীরে ধীরে ছোট হয়ে যায় এবং এর কার্যকারিতা কমে যায়, অর্থাৎ এর <strong>ক্ষরণকাল আজীবন নয়</strong>। সুপ্রারেনাল, পিনিয়াল এবং টেস্টিস সাধারণত আজীবন সক্রিয় থাকে।</p>",
+        },
+        {
+          id: 20,
+          question: "নিওগ্লুকোজেনেসিস প্রতিরোধ করে?",
+          options: {
+            a: "সোমাটোস্টাটিন",
+            b: "গ্যাস্ট্রিন",
+            c: "ইনসুলিন",
+            d: "গ্লুকাগন",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>নিওগ্লুকোজেনেসিস (Gluconeogenesis)</strong> হলো এমন একটি প্রক্রিয়া যেখানে নন-কার্বোহাইড্রেট উৎস থেকে গ্লুকোজ তৈরি হয়। <strong>ইনসুলিন (Insulin)</strong>, অগ্ন্যাশয়ের বিটা কোষ থেকে নিঃসৃত হয়, রক্তে শর্করার মাত্রা কমায় এবং <strong>নিওগ্লুকোজেনেসিস প্রক্রিয়াকে প্রতিরোধ করে</strong>। গ্লুকাগন (Glucagon) নিওগ্লুকোজেনেসিসকে উদ্দীপিত করে রক্তে শর্করা বাড়ায়।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "মস্তিষ্কের কোন অংশ থেকে অক্সিটোসিন ও অ্যান্টিডাইইউরেটিক হরমোন ক্ষরিত হয়?",
+          options: {
+            a: "হাইপোথ্যালামাস",
+            b: "থ্যালামাস",
+            c: "সেরেব্রাম",
+            d: "সেরেবেলাম",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>অক্সিটোসিন (Oxytocin) এবং অ্যান্টিডাইইউরেটিক হরমোন (Antidiuretic hormone - ADH)</strong>, যা ভেসোপ্রেসিন (Vasopressin) নামেও পরিচিত, উভয়ই <strong>হাইপোথ্যালামাসের (Hypothalamus)</strong> নিউরন দ্বারা তৈরি হয়। এই হরমোনগুলো হাইপোথ্যালামাস থেকে পিটুইটারি গ্রন্থির পশ্চাৎ অংশে (posterior pituitary) পরিবাহিত হয় এবং সেখান থেকে রক্তে নিঃসৃত হয়।</p>",
+        },
+        {
+          id: 22,
+          question: "পোস্টেরিয়র পিটুইটারি থেকে নিম্নের কোন হরমোন নিঃসৃত হয়?",
+          options: {
+            a: "লাটিনাইজিং হরমোন",
+            b: "অক্সিটোসিন",
+            c: "সোমাটোট্রপিন",
+            d: "অ্যাড্রেনালিন",
+          },
+          correct: "b",
+          explanation:
+            "<p>পোস্টেরিয়র পিটুইটারি (Posterior pituitary) বা নিউরোহাইপোফাইসিস (Neurohypophysis) দুটি হরমোন নিঃসৃত করে যা হাইপোথ্যালামাসে তৈরি হয়: <strong>অক্সিটোসিন (Oxytocin)</strong> এবং অ্যান্টিডাইইউরেটিক হরমোন (ADH) বা ভেসোপ্রেসিন। লাটিনাইজিং হরমোন (LH) এবং সোমাটোট্রপিন (গ্রোথ হরমোন) অগ্র পিটুইটারি থেকে নিঃসৃত হয়, এবং অ্যাড্রেনালিন অ্যাড্রেনাল গ্রন্থি থেকে।</p>",
+        },
+        {
+          id: 23,
+          question: "নিম্নের কোনটি এককোষী গ্রন্থি?",
+          options: {
+            a: "গবলেট",
+            b: "অগ্ন্যাশয়",
+            c: "লালা",
+            d: "যকৃত",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>গবলেট কোষ (Goblet cells)</strong> হলো এক ধরনের <strong>এককোষী গ্রন্থি</strong> যা শ্লেষ্মা (mucus) উৎপাদন ও নিঃসরণ করে। এটি শ্বাসনালী এবং পাচনতন্ত্রের আস্তরণে পাওয়া যায়। অগ্ন্যাশয়, লালা গ্রন্থি এবং যকৃত হলো বহুকোষী গ্রন্থি।</p>",
+        },
+        {
+          id: 24,
+          question: "দেহ বৃদ্ধিকারক হরমোন কোনটি?",
+          options: {
+            a: "সোমাটোট্রফিন",
+            b: "থাইরক্সিন",
+            c: "প্রোল্যাকটিন",
+            d: "অ্যাড্রিনালিন",
+          },
+          correct: "a",
+          explanation:
+            "<p>দেহ বৃদ্ধিকারক হরমোন হলো <strong>সোমাটোট্রফিন (Somatotropin)</strong>, যা <strong>গ্রোথ হরমোন (Growth hormone - GH)</strong> নামেও পরিচিত। এটি পিটুইটারি গ্রন্থি থেকে নিঃসৃত হয় এবং হাড়, পেশি এবং অন্যান্য টিস্যুর বৃদ্ধিতে উদ্দীপনা যোগায়। থাইরক্সিন বিপাক নিয়ন্ত্রণ করে, প্রোল্যাকটিন দুধ উৎপাদন করে, এবং অ্যাড্রিনালিন চাপ প্রতিক্রিয়া নিয়ন্ত্রণ করে।</p>",
+        },
+        {
+          id: 25,
+          question: "পশ্চাৎ পিটুইটারি গ্রন্থি নিঃসৃত হরমোন কোনটি?",
+          options: {
+            a: "STH",
+            b: "TSH",
+            c: "FSH",
+            d: "ADH",
+          },
+          correct: "d",
+          explanation:
+            "<p>পশ্চাৎ পিটুইটারি গ্রন্থি (Posterior pituitary) দুটি হরমোন নিঃসৃত করে যা হাইপোথ্যালামাসে তৈরি হয়: অক্সিটোসিন এবং <strong>ADH (Antidiuretic hormone)</strong>, যা ভেসোপ্রেসিন নামেও পরিচিত। STH (Somatotropic hormone বা গ্রোথ হরমোন), TSH (Thyroid-stimulating hormone), এবং FSH (Follicle-stimulating hormone) অগ্র পিটুইটারি থেকে নিঃসৃত হয়।</p>",
+        },
+        {
+          id: 26,
+          question: "নালিবিহীন গ্রন্থি কোনটি?",
+          options: {
+            a: "থাইমাস",
+            b: "টনসিল",
+            c: "ল্যাক্রিমাল",
+            d: "প্যারোটিড",
+          },
+          correct: "a",
+          explanation:
+            "<p>নালিবিহীন গ্রন্থি (Ductless gland) বা অন্তঃক্ষরা গ্রন্থি (Endocrine gland) হলো সেই গ্রন্থি যা তার ক্ষরিত পদার্থ (হরমোন) সরাসরি রক্তে নিঃসরণ করে, কোনো নালীর মাধ্যমে নয়। <strong>থাইমাস (Thymus)</strong> হলো একটি অন্তঃক্ষরা গ্রন্থি। টনসিল লিম্ফয়েড অঙ্গ, ল্যাক্রিমাল (অশ্রু) এবং প্যারোটিড (লালা) গ্রন্থি হলো নালীযুক্ত বা বহিঃক্ষরা গ্রন্থি।</p>",
+        },
+        {
+          id: 27,
+          question: "থাইরয়েড গ্রন্থি থেকে নিঃসৃত হরমোন নয় কোনটি?",
+          options: {
+            a: "থাইরক্সিন",
+            b: "ক্যালসিটোনিন",
+            c: "থাইরয়েড উদ্দীপক হরমোন",
+            d: "ট্রাই আয়োডো থাইরোনিন",
+          },
+          correct: "c",
+          explanation:
+            "<p>থাইরয়েড গ্রন্থি থেকে থাইরক্সিন (T4), ট্রাই আয়োডো থাইরোনিন (T3) এবং ক্যালসিটোনিন হরমোন নিঃসৃত হয়। <strong>থাইরয়েড উদ্দীপক হরমোন (Thyroid-stimulating hormone - TSH)</strong> পিটুইটারি গ্রন্থি থেকে নিঃসৃত হয় এবং থাইরয়েড গ্রন্থিকে হরমোন উৎপাদনে উদ্দীপিত করে। সুতরাং, TSH থাইরয়েড গ্রন্থি থেকে নিঃসৃত হয় না।</p>",
+        },
+        {
+          id: 28,
+          question: "অ্যাড্রেনাল গ্রন্থি কোন অঙ্গের সাথে নিবিড়ভাবে যুক্ত?",
+          options: {
+            a: "মস্তিষ্ক",
+            b: "ট্রাকিয়া",
+            c: "যকৃত",
+            d: "বৃক্ক",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>অ্যাড্রেনাল গ্রন্থি (Adrenal gland)</strong>, যা সুপ্রারেনাল গ্রন্থি (Suprarenal gland) নামেও পরিচিত, <strong>বৃক্কের (Kidney)</strong> ঠিক উপরে অবস্থিত দুটি ছোট গ্রন্থি। এটি বৃক্কের সাথে নিবিড়ভাবে যুক্ত এবং বিভিন্ন হরমোন নিঃসরণ করে যা বিপাক, রোগ প্রতিরোধ ব্যবস্থা, রক্তচাপ এবং স্ট্রেস প্রতিক্রিয়ায় ভূমিকা রাখে।</p>",
+        },
+        {
+          id: 29,
+          question: "মানুষের হৃৎস্পন্দন ও রক্তচাপ বৃদ্ধিকারী হরমোন কোনটি?",
+          options: {
+            a: "ইনসুলিন",
+            b: "অ্যাড্রেনালিন",
+            c: "থাইরক্সিন",
+            d: "গ্যাস্ট্রিন",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানুষের হৃৎস্পন্দন ও রক্তচাপ বৃদ্ধিকারী প্রধান হরমোন হলো <strong>অ্যাড্রেনালিন (Adrenaline)</strong>, যা এপিনেফ্রিন (Epinephrine) নামেও পরিচিত। এটি অ্যাড্রেনাল গ্রন্থির মেডুলা থেকে নিঃসৃত হয় এবং 'লড়াই বা পালানো' (fight-or-flight) প্রতিক্রিয়ার সময় হৃৎপিণ্ডের কার্যকলাপ বাড়ায় এবং রক্তচাপ বৃদ্ধি করে।</p>",
+        },
+        {
+          id: 30,
+          question: "অন্তঃক্ষরা গ্রন্থির ক্ষেত্রে কোনটি সঠিক নয়?",
+          options: {
+            a: "হরমোন নিঃসৃত করে",
+            b: "নিঃসৃত পদার্থটি প্রোটিন",
+            c: "কার্যাবলি দ্রুত ও দীর্ঘস্থায়ী",
+            d: "কার্যাবলি বীর ও দীর্ঘস্থায়ী",
+          },
+          correct: "c",
+          explanation:
+            "<p>অন্তঃক্ষরা গ্রন্থি (Endocrine gland) হরমোন নিঃসৃত করে এবং তাদের নিঃসৃত পদার্থ (হরমোন) প্রোটিন, স্টেরয়েড বা অ্যামাইন ডেরিভেটিভ হতে পারে। তাদের কার্যাবলি সাধারণত <strong>ধীর এবং দীর্ঘস্থায়ী</strong> হয়, স্নায়বিক উদ্দীপনার মতো দ্রুত ও তাৎক্ষণিক হয় না। তাই 'কার্যাবলি দ্রুত ও দীর্ঘস্থায়ী' তথ্যটি সঠিক নয়।</p>",
+        },
+        {
+          id: 31,
+          question: "নিচের কোনটি অন্তঃক্ষরা গ্রন্থি?",
+          options: {
+            a: "স্তনগ্রন্থি",
+            b: "যকৃত",
+            c: "পিটুইটারি গ্রন্থি",
+            d: "লালাগ্রন্থি",
+          },
+          correct: "c",
+          explanation:
+            "<p>অন্তঃক্ষরা গ্রন্থি (Endocrine gland) হলো নালিবিহীন গ্রন্থি যা সরাসরি রক্তে হরমোন নিঃসরণ করে। <strong>পিটুইটারি গ্রন্থি (Pituitary gland)</strong> হলো একটি প্রধান অন্তঃক্ষরা গ্রন্থি যা দেহের অনেক অন্তঃক্ষরা কার্যকলাপ নিয়ন্ত্রণ করে। স্তনগ্রন্থি, যকৃত এবং লালাগ্রন্থি মূলত বহিঃক্ষরা গ্রন্থি বা মিশ্র গ্রন্থি (যকৃত)।</p>",
+        },
+        {
+          id: 32,
+          question: "থাইরক্সিনে কোন উপাদান বিদ্যমান?",
+          options: {
+            a: "আয়রন",
+            b: "পটাশিয়াম",
+            c: "ক্যালসিয়াম",
+            d: "আয়োডিন",
+          },
+          correct: "d",
+          explanation:
+            "<p>থাইরক্সিন (Thyroxine) হরমোন উৎপাদনে <strong>আয়োডিন (Iodine)</strong> একটি অপরিহার্য উপাদান। থাইরক্সিন (T4) এবং ট্রাই আয়োডো থাইরোনিন (T3) উভয়ই আয়োডিন ধারণ করে। আয়োডিনের অভাবে থাইরয়েড হরমোনের উৎপাদন ব্যাহত হয় এবং গলগণ্ড রোগ হতে পারে।</p>",
+        },
+        {
+          id: 33,
+          question:
+            "পরিস্ফুটনের সময় কোন হরমোন ফিটাসের ফুসফুস গঠনে সাহায্য করে?",
+          options: {
+            a: "প্যারাথরমোন",
+            b: "থাইমোসিন",
+            c: "গ্লুকোকটিকয়েড",
+            d: "ক্যালসিটোনিন",
+          },
+          correct: "c",
+          explanation:
+            "<p>গ্লুকোকর্টিকয়েড (Glucocorticoids), যেমন কর্টিসল, ভ্রূণের (ফিটাস) বিকাশে গুরুত্বপূর্ণ ভূমিকা পালন করে। বিশেষ করে, <strong>গ্লুকোকর্টিকয়েড হরমোন ফিটাসের ফুসফুসের পরিপক্কতা এবং সারফ্যাক্ট্যান্ট (Surfactant) উৎপাদনে সাহায্য করে</strong>, যা জন্মের পর ফুসফুস সঠিকভাবে কাজ করার জন্য অপরিহার্য।</p>",
+        },
+        {
+          id: 34,
+          question: "কোন হরমোন কম ক্ষরণ হলে গলগণ্ড রোগ হয়?",
+          options: {
+            a: "ট্রাইআয়োডোথাইরোনিন",
+            b: "ক্যালসিটোনিন",
+            c: "অক্সিটোসিন",
+            d: "থাইরক্সিন",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>থাইরক্সিন (Thyroxine)</strong> হরমোন থাইরয়েড গ্রন্থি থেকে নিঃসৃত হয় এবং দেহের বিপাকীয় প্রক্রিয়া নিয়ন্ত্রণ করে। <strong>থাইরক্সিনের কম ক্ষরণ (হাইপোথাইরয়েডিজম) হলে গলগণ্ড (Goiter) রোগ হয়</strong>, যেখানে থাইরয়েড গ্রন্থি ফুলে যায় কারণ এটি আরও হরমোন উৎপাদনের চেষ্টা করে। আয়োডিনের ঘাটতিও এর একটি সাধারণ কারণ।</p>",
+        },
+        {
+          id: 35,
+          question: "নিচের কোনটি হরমোন?",
+          options: {
+            a: "পেপসিন",
+            b: "ট্রিপসিন",
+            c: "ইনসুলিন",
+            d: "টায়ালিন",
+          },
+          correct: "c",
+          explanation:
+            "<p>হরমোন হলো রাসায়নিক বার্তাবাহক যা অন্তঃক্ষরা গ্রন্থি থেকে নিঃসৃত হয়ে রক্তপ্রবাহের মাধ্যমে নির্দিষ্ট লক্ষ্য কোষে কাজ করে। <strong>ইনসুলিন (Insulin)</strong> হলো অগ্ন্যাশয় থেকে নিঃসৃত একটি হরমোন যা রক্তে শর্করার মাত্রা নিয়ন্ত্রণ করে। পেপসিন, ট্রিপসিন এবং টায়ালিন হলো পাচক এনজাইম।</p>",
+        },
+        {
+          id: 36,
+          question: "মানবদেহে পানি ও লবণের মাত্রা নিয়ন্ত্রণ করে কোন হরমোন?",
+          options: {
+            a: "ইনসুলিন",
+            b: "প্যারাথরমোন",
+            c: "অ্যালডোস্টেরন",
+            d: "এপিনেফ্রিন",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানবদেহে <strong>পানি (Water) এবং লবণের (Salt) মাত্রা নিয়ন্ত্রণ</strong> করার জন্য <strong>অ্যালডোস্টেরন (Aldosterone)</strong> হরমোন প্রধান ভূমিকা পালন করে। এটি অ্যাড্রেনাল গ্রন্থি থেকে নিঃসৃত হয় এবং বৃক্কের মাধ্যমে সোডিয়াম (Na⁺) এবং জল শোষণ বৃদ্ধি করে, যা দেহের ফ্লুইড ভারসাম্য এবং রক্তচাপ বজায় রাখে।</p>",
+        },
+        {
+          id: 37,
+          question: "টেস্টোস্টেরন হরমোনের কাজ কোনটি?",
+          options: {
+            a: "ডিম্বাণু সৃষ্টি",
+            b: "অ্যান্টিবডি সৃষ্টি",
+            c: "শুক্রাণু সৃষ্টি",
+            d: "অমরা সৃষ্টি",
+          },
+          correct: "c",
+          explanation:
+            "<p>টেস্টোস্টেরন (Testosterone) হলো পুরুষদের প্রধান যৌন হরমোন, যা শুক্রাশয় (Testis) থেকে নিঃসৃত হয়। এর প্রধান কাজ হলো পুরুষদের সেকেন্ডারি যৌন বৈশিষ্ট্য বিকাশ করা এবং <strong>শুক্রাণু সৃষ্টি (Spermatogenesis)</strong> প্রক্রিয়াকে উদ্দীপিত করা।</p>",
+        },
+        {
+          id: 38,
+          question: "প্যারোটিড গ্রন্থির অবস্থান কোথায়?",
+          options: {
+            a: "কানের নিচে",
+            b: "জিহ্বার নিচে",
+            c: "জিহ্বার উপরে",
+            d: "বৃক্কে",
+          },
+          correct: "a",
+          explanation:
+            "<p>প্যারোটিড গ্রন্থি (Parotid gland) হলো মানুষের বৃহত্তম লালা গ্রন্থি। এটি <strong>কানের নিচে</strong> এবং চোয়ালের পেছনের দিকে অবস্থিত। এটি সিরাস (serous) লালা উৎপাদন করে যা পাচন প্রক্রিয়ায় সাহায্য করে।</p>",
+        },
+        {
+          id: 39,
+          question: "মানুষে কয়টি প্যারাথাইরয়েড গ্রন্থি থাকে?",
+          options: {
+            a: "৩",
+            b: "৪",
+            c: "২",
+            d: "১",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানুষের থাইরয়েড গ্রন্থির পিছনে সাধারণত <strong>৪টি প্যারাথাইরয়েড গ্রন্থি (Parathyroid glands)</strong> থাকে। এগুলো ছোট, মটরের আকারের গ্রন্থি যা প্যারাথরমোন নিঃসরণ করে ক্যালসিয়াম ও ফসফরাসের বিপাক নিয়ন্ত্রণ করে।</p>",
+        },
+        {
+          id: 40,
+          question: "নিম্নের কোনটিকে মাস্টার গ্ল্যান্ড বলা হয়?",
+          options: {
+            a: "Pituitary Gland",
+            b: "Thyroid Gland",
+            c: "Parotid Gland",
+            d: "Lymph Gland",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>পিটুইটারি গ্রন্থিকে (Pituitary Gland) 'মাস্টার গ্ল্যান্ড' (Master Gland)</strong> বলা হয় কারণ এটি অন্যান্য অনেক অন্তঃক্ষরা গ্রন্থির কার্যকারিতা নিয়ন্ত্রণকারী হরমোন নিঃসৃত করে, যেমন থাইরয়েড গ্রন্থি, অ্যাড্রেনাল গ্রন্থি, ডিম্বাশয় এবং শুক্রাশয়।</p>",
+        },
+        {
+          id: 41,
+          question: "কোন গ্রন্থি থেকে ইনসুলিন নিঃসৃত হয়?",
+          options: {
+            a: "অগ্ন্যাশয়",
+            b: "থাইরয়েড",
+            c: "প্লীহা",
+            d: "যকৃত",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>ইনসুলিন (Insulin)</strong> হরমোন <strong>অগ্ন্যাশয়ের (Pancreas)</strong> আইলেটস অফ ল্যাঙ্গারহ্যান্সেস (Islets of Langerhans) অবস্থিত বিটা কোষ (Beta cells) থেকে নিঃসৃত হয়। এটি রক্তে শর্করার মাত্রা নিয়ন্ত্রণ করে।</p>",
+        },
+        {
+          id: 42,
+          question: "লুটিনাইজিং হরমোন যে কাজকে প্রভাবিত করে?",
+          options: {
+            a: "অস্থি বৃদ্ধি",
+            b: "খাদ্যের বিপাক",
+
+            c: "রক্তচাপ",
+            d: "যৌন হরমোনের কাজ",
+          },
+          correct: "d",
+          explanation:
+            "<p>লুটিনাইজিং হরমোন (Luteinizing hormone - LH) পিটুইটারি গ্রন্থি থেকে নিঃসৃত হয় এবং <strong>যৌন হরমোনের কাজকে প্রভাবিত করে</strong>। মহিলাদের ক্ষেত্রে এটি ডিম্বস্ফোটন এবং প্রোজেস্টেরন উৎপাদনে সাহায্য করে, আর পুরুষদের ক্ষেত্রে এটি টেস্টোস্টেরন উৎপাদনে উদ্দীপনা যোগায়।</p>",
+        },
+        {
+          id: 43,
+          question:
+            "চিড়িয়াখানায় বাঘের খাঁচার সামনে গিয়ে মিতু ভয় পেল। মিতুর রক্তে কোন হরমোন নিঃসৃত হবে?",
+          options: {
+            a: "গ্লুকোকটিকয়েড",
+            b: "ইস্ট্রোজেন",
+            c: "অ্যাড্রেনালিন",
+            d: "ভেসোপ্রেসিন",
+          },
+          correct: "c",
+          explanation:
+            "<p>ভয়, চাপ বা উত্তেজনার মতো পরিস্থিতিতে শরীর 'লড়াই বা পালানো' (fight-or-flight) প্রতিক্রিয়া দেখায়। এই প্রতিক্রিয়ার সময় <strong>অ্যাড্রেনালিন (Adrenaline)</strong>, যা এপিনেফ্রিন নামেও পরিচিত, হরমোনটি অ্যাড্রেনাল গ্রন্থির মেডুলা থেকে দ্রুত নিঃসৃত হয়। এটি হৃৎস্পন্দন বৃদ্ধি, রক্তচাপ বৃদ্ধি এবং পেশিগুলিতে রক্ত ​​প্রবাহ বাড়িয়ে শরীরকে জরুরি অবস্থার জন্য প্রস্তুত করে।</p>",
+        },
+        {
+          id: 44,
+          question: "জরায়ুর সংকোচন ঘটায় কোন হরমোন?",
+          options: {
+            a: "ইস্ট্রোজেন",
+            b: "রিলাক্সিন",
+            c: "প্রজেস্টেরন",
+            d: "অক্সিটোসিন",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>অক্সিটোসিন (Oxytocin)</strong> হরমোনটি গর্ভাবস্থার শেষের দিকে এবং প্রসবের সময় জরায়ুর পেশিগুলোর <strong>সংকোচন ঘটায়</strong>। এটি স্তন থেকে দুধ নিঃসরণেও সাহায্য করে (দুধ নির্গমন)। রিলাক্সিন জন্মদানের সময় শ্রোণী অঞ্চলের লিগামেন্টকে শিথিল করে, ইস্ট্রোজেন এবং প্রজেস্টেরন মাসিক চক্র এবং গর্ভাবস্থা নিয়ন্ত্রণ করে।</p>",
+        },
+        {
+          id: 45,
+          question: "পিটুইটারি গ্রন্থির অবস্থান কোথায়?",
+          options: {
+            a: "মস্তিষ্কের নিচে",
+            b: "পাকস্থলির ওপরে",
+            c: "বৃক্কের ওপরে",
+            d: "গলার দু পার্শ্বে",
+          },
+          correct: "a",
+          explanation:
+            "<p>পিটুইটারি গ্রন্থি (Pituitary gland) হলো একটি ছোট অন্তঃক্ষরা গ্রন্থি যা <strong>মস্তিষ্কের নিচে</strong>, হাইপোথ্যালামাসের সাথে সংযুক্ত অবস্থায়, স্ফেনয়েড হাড়ের একটি ছোট গহ্বর (সেল্লা টারসিকা) এর মধ্যে অবস্থিত।</p>",
+        },
+        {
+          id: 46,
+          question: "কোনটি হরমোন নয়?",
+          options: {
+            a: "টায়ালিন",
+            b: "থাইরক্সিন",
+            c: "ইনসুলিন",
+            d: "অ্যাড্রেনালিন",
+          },
+          correct: "a",
+          explanation:
+            "<p>হরমোন হলো রাসায়নিক বার্তাবাহক যা অন্তঃক্ষরা গ্রন্থি থেকে নিঃসৃত হয়। থাইরক্সিন, ইনসুলিন এবং অ্যাড্রেনালিন হলো হরমোন। তবে, <strong>টায়ালিন (Ptyalin)</strong>, যা অ্যামাইলেজ (Amylase) নামেও পরিচিত, হলো একটি <strong>পাচক এনজাইম</strong> যা লালা গ্রন্থি থেকে নিঃসৃত হয় এবং শর্করা পরিপাক শুরু করে।</p>",
+        },
+        {
+          id: 47,
+          question: "উত্তেজনা, ভয় ও আতঙ্কে কোন হরমোনটি নিঃসৃত হয়?",
+          options: {
+            a: "ইনসুলিন",
+            b: "থাইরক্সিন",
+            c: "অ্যাড্রেনালিন",
+            d: "মেলাটোনিন",
+          },
+          correct: "c",
+          explanation:
+            "<p>উত্তেজনা, ভয়, আতঙ্ক বা চাপের মতো পরিস্থিতিতে শরীর 'লড়াই বা পালানো' (fight-or-flight) প্রতিক্রিয়া দেখায়। এই প্রতিক্রিয়ার সময় <strong>অ্যাড্রেনালিন (Adrenaline)</strong>, যা এপিনেফ্রিন (Epinephrine) নামেও পরিচিত, হরমোনটি অ্যাড্রেনাল গ্রন্থির মেডুলা থেকে দ্রুত নিঃসৃত হয়। এটি হৃৎস্পন্দন বৃদ্ধি, রক্তচাপ বৃদ্ধি এবং পেশিগুলিতে রক্ত ​​প্রবাহ বাড়িয়ে শরীরকে জরুরি অবস্থার জন্য প্রস্তুত করে।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                            <label class="option" data-option="${option}">
+                              <div class="circle">${option}</div>
+                              <span class="option-text">${question.options[option]}</span>
+                            </label>
+                          `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                               <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                               <div class="explanation-content">
+                                 <div class="explanation-label">ব্যাখ্যা:</div>
+                                 ${question.explanation}
+                               </div>
+                             </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                          <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                          <div class="options">
+                            ${optionsHTML}
+                          </div>
+                          ${explanationHTML}
+                        `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
